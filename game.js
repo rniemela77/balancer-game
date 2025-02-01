@@ -64,7 +64,7 @@ class MyScene extends Phaser.Scene {
         });
         
         // Calculate ball size and position
-        this.ballRadius = (window.innerWidth * 0.15) / 2;  // 15% of screen width (diameter)
+        this.ballRadius = (window.innerWidth * 0.07) / 2;  // 15% of screen width (diameter)
         this.ballStartX = window.innerWidth * 0.75;  // 85% across screen (15% from right)
         
         // Create ball using Matter.js
@@ -150,13 +150,31 @@ class MyScene extends Phaser.Scene {
     createBall() {
         // Create ball using Matter.js
         this.ball = this.matter.add.circle(this.ballStartX, 0, this.ballRadius, {
-            restitution: 0,       // No bounce for smoother rolling
-            friction: 0.000005,   // Slight friction for controlled sliding
+            restitution: 0.001,   // Almost no bounce
+            friction: 0.005,      // Increased friction for better rolling
             frictionAir: 0.0005,  // Very slight air resistance
             frictionStatic: 0,    // No static friction
             density: 0.001,       // Keep it light
-            render: { fillStyle: '#ff0000' }
+            angularDamping: 0     // No damping on rotation
         });
+
+        // Create the visual representation of the ball
+        this.ballGraphics = this.add.graphics();
+        
+        // Draw the ball with gradient
+        this.ballGraphics.lineStyle(2, 0xff0000);
+        this.ballGraphics.fillGradientStyle(
+            0xff0000,   // top-left color (red)
+            0x00ff00,   // top-right color (green)
+            0xff0000,   // bottom-left color (red)
+            0x00ff00,   // bottom-right color (green)
+            1          // alpha
+        );
+        this.ballGraphics.beginPath();
+        this.ballGraphics.arc(0, 0, this.ballRadius, 0, Math.PI * 2);
+        this.ballGraphics.closePath();
+        this.ballGraphics.fillPath();
+        this.ballGraphics.strokePath();
 
         // Set ball's collision filter
         this.ball.collisionFilter = {
@@ -403,6 +421,13 @@ class MyScene extends Phaser.Scene {
             return;
         }
 
+        // Update ball rotation based on velocity
+        if (this.ball) {
+            // Calculate rotation based on horizontal velocity
+            const rotationFactor = 0.05; // Reduced rotation speed
+            this.matter.body.setAngularVelocity(this.ball, this.ball.velocity.x * rotationFactor);
+        }
+
         // Check for ball-circle collision
         this.checkBallCircleCollision();
 
@@ -472,6 +497,12 @@ class MyScene extends Phaser.Scene {
         this.graphics.moveTo(thirdIntersectX, thirdIntersectY);
         this.graphics.lineTo(thirdEndX, thirdEndY);
         this.graphics.strokePath();
+
+        // Update ball graphics position to match physics body
+        if (this.ball && this.ballGraphics) {
+            this.ballGraphics.setPosition(this.ball.position.x, this.ball.position.y);
+            this.ballGraphics.setRotation(this.ball.angle);
+        }
     }
 }
 
@@ -483,7 +514,7 @@ const config = {
     physics: {
         default: 'matter',
         matter: {
-            debug: true,
+            debug: false,
             gravity: { y: 0.3 }
         }
     },

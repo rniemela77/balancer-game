@@ -44,9 +44,9 @@ class MyScene extends Phaser.Scene {
     create() {
         console.log('Create function is called');
         
-        // Set up Matter physics
+        // Set up Matter physics with stronger gravity
         this.matter.world.setBounds(0, 0, window.innerWidth, window.innerHeight);
-        this.matter.world.setGravity(0, 1);  // Light gravity
+        this.matter.world.setGravity(0, 3.5);  // Increased gravity for faster movement
         
         // Calculate sizes relative to screen width
         this.lineThickness = window.innerWidth * 0.05;  // 5% of screen width
@@ -159,14 +159,14 @@ class MyScene extends Phaser.Scene {
     }
 
     createBall() {
-        // Create ball using Matter.js
+        // Create ball using Matter.js with adjusted physics properties
         this.ball = this.matter.add.circle(this.ballStartX, 0, this.ballRadius, {
-            restitution: 0.001,   // Almost no bounce
-            friction: 0.005,      // Increased friction for better rolling
-            frictionAir: 0.0005,  // Very slight air resistance
-            frictionStatic: 0,    // No static friction
-            density: 0.001,       // Keep it light
-            angularDamping: 0     // No damping on rotation
+            restitution: 0.3,      // Moderate bounce
+            friction: 0.01,        // Further reduced friction for faster rolling
+            frictionAir: 0.0002,   // Minimal air resistance
+            frictionStatic: 0.1,   // Reduced static friction
+            density: 6,        // Slightly reduced density
+            angularDamping: 0.05   // Reduced angular damping for faster rolling
         });
 
         // Create the visual representation of the ball
@@ -497,10 +497,9 @@ class MyScene extends Phaser.Scene {
             return;
         }
 
-        // Update ball rotation based on velocity
+        // Update ball rotation based on velocity with reduced effect
         if (this.ball) {
-            // Calculate rotation based on horizontal velocity
-            const rotationFactor = 0.05; // Reduced rotation speed
+            const rotationFactor = 0.02; // Further reduced rotation speed
             this.matter.body.setAngularVelocity(this.ball, this.ball.velocity.x * rotationFactor);
         }
 

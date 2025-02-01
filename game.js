@@ -15,8 +15,11 @@ class MyScene extends Phaser.Scene {
         this.matter.world.setBounds(0, 0, window.innerWidth, window.innerHeight);
         this.matter.world.setGravity(0, 1);  // Light gravity
         
+        // Calculate sizes relative to screen width
+        this.lineThickness = window.innerWidth * 0.05;  // 5% of screen width
+        
         // Create graphics for line visualization with thicker lines
-        this.graphics = this.add.graphics({ lineStyle: { width: 20, color: 0x00ff00 } });
+        this.graphics = this.add.graphics({ lineStyle: { width: this.lineThickness, color: 0x00ff00 } });
         
         // Add debug text
         this.debugText = this.add.text(10, 10, 'Debug Info', {
@@ -25,23 +28,16 @@ class MyScene extends Phaser.Scene {
             backgroundColor: '#000'
         });
         
-        // Calculate ball size based on screen width
-        const ballRadius = (window.innerWidth * 0.15) / 2;  // 15% of screen width (diameter)
+        // Calculate ball size and position
+        this.ballRadius = (window.innerWidth * 0.15) / 2;  // 15% of screen width (diameter)
+        this.ballStartX = window.innerWidth * 0.75;  // 85% across screen (15% from right)
         
         // Create ball using Matter.js
-        this.ball = this.matter.add.circle(400, 0, ballRadius, {
-            restitution: 0,       // No bounce for smoother rolling
-            friction: 0.000005,   // Slight friction for controlled sliding
-            frictionAir: 0.0005,  // Very slight air resistance
-            frictionStatic: 0,    // No static friction
-            density: 0.001,       // Keep it light
-            render: { fillStyle: '#ff0000' }
-        });
+        this.createBall();
 
         // Line properties
         this.lineLength = window.innerWidth * 0.85;  // 85% of screen width
         this.secondLineLength = window.innerWidth * 0.75;  // 75% of screen width
-        this.lineThickness = 20;
         this.lineCenter = {
             x: window.innerWidth / 2,
             y: window.innerHeight / 2
@@ -112,6 +108,24 @@ class MyScene extends Phaser.Scene {
                 this.createLineCollisions(this.currentAngle);
             }
         });
+    }
+
+    createBall() {
+        // Create ball using Matter.js
+        this.ball = this.matter.add.circle(this.ballStartX, 0, this.ballRadius, {
+            restitution: 0,       // No bounce for smoother rolling
+            friction: 0.000005,   // Slight friction for controlled sliding
+            frictionAir: 0.0005,  // Very slight air resistance
+            frictionStatic: 0,    // No static friction
+            density: 0.001,       // Keep it light
+            render: { fillStyle: '#ff0000' }
+        });
+
+        // Set ball's collision filter
+        this.ball.collisionFilter = {
+            category: 0x0001,
+            mask: 0x0003
+        };
     }
 
     setupDeviceOrientation() {
@@ -276,6 +290,13 @@ class MyScene extends Phaser.Scene {
     }
 
     update() {
+        // Check if ball is in bottom 10% of screen
+        if (this.ball && this.ball.position.y > window.innerHeight * 0.9) {
+            // Restart the scene
+            this.scene.restart();
+            return;
+        }
+
         // Draw the lines
         this.graphics.clear();
         
@@ -299,7 +320,7 @@ class MyScene extends Phaser.Scene {
         const intersectY = this.lineCenter.y + Math.sin(angle) * intersectionOffset;
         
         const secondAngle = angle + this.secondLineAngle;
-        const secondHalfLength = this.secondLineLength / 2;  // Using screen-relative length
+        const secondHalfLength = this.secondLineLength / 2;
         const secondEndX = intersectX + Math.cos(secondAngle) * secondHalfLength;
         const secondEndY = intersectY + Math.sin(secondAngle) * secondHalfLength;
         

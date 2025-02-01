@@ -2,10 +2,33 @@ class MyScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MyScene' });
         this.hasDeviceOrientation = false;
+        this.isSecondLineActive = false;  // Track activation state
     }
 
     preload() {
         // Load assets here
+    }
+
+    shutdown() {
+        // Clean up physics bodies
+        if (this.lineSegment) {
+            this.matter.world.remove(this.lineSegment);
+        }
+        if (this.secondLineSegment) {
+            this.matter.world.remove(this.secondLineSegment);
+        }
+        if (this.ball) {
+            this.matter.world.remove(this.ball);
+        }
+        
+        // Reset state variables
+        this.isSecondLineActive = false;
+        this.currentAngle = 0;
+        
+        // Clear graphics
+        if (this.graphics) {
+            this.graphics.clear();
+        }
     }
 
     create() {
@@ -20,6 +43,11 @@ class MyScene extends Phaser.Scene {
         
         // Create graphics for line visualization with thicker lines
         this.graphics = this.add.graphics({ lineStyle: { width: this.lineThickness, color: 0x00ff00 } });
+        
+        // Create the dark grey circle (non-physics)
+        this.circleRadius = this.lineThickness * 1.5;  // 50% larger than line thickness
+        this.circleOffset = this.lineThickness * 2;  // Offset above the line
+        this.attachedCircle = this.add.circle(0, 0, this.circleRadius, 0x444444);
         
         // Add debug text
         this.debugText = this.add.text(10, 10, 'Debug Info', {
@@ -262,25 +290,27 @@ class MyScene extends Phaser.Scene {
             }
         );
 
-        // Create the second line segment with collision category
-        this.secondLineSegment = this.matter.add.rectangle(
-            intersectX,
-            intersectY,
-            this.secondLineLength,  // Using the screen-relative length
-            this.lineThickness,
-            {
-                isStatic: true,
-                angle: angle + this.secondLineAngle,
-                friction: 0,
-                frictionStatic: 0,
-                restitution: 0,
-                collisionFilter: {
-                    category: 0x0002,
-                    mask: 0x0001
-                },
-                render: { fillStyle: '#00ff00' }
-            }
-        );
+        // Create the second line segment - only add physics body if active
+        if (this.isSecondLineActive) {
+            this.secondLineSegment = this.matter.add.rectangle(
+                intersectX,
+                intersectY,
+                this.secondLineLength,
+                this.lineThickness,
+                {
+                    isStatic: true,
+                    angle: angle + this.secondLineAngle,
+                    friction: 0,
+                    frictionStatic: 0,
+                    restitution: 0,
+                    render: { fillStyle: '#00ff00' }
+                }
+            );
+        } else {
+            // Store the position and angle for rendering
+            this.secondLinePosition = { x: intersectX, y: intersectY };
+            this.secondLineAngleTotal = angle + this.secondLineAngle;
+        }
 
         // Set ball's collision filter
         this.ball.collisionFilter = {
@@ -289,13 +319,30 @@ class MyScene extends Phaser.Scene {
         };
     }
 
+    checkBallCircleCollision() {
+        if (!this.ball || this.isSecondLineActive) return;
+
+        const dx = this.ball.position.x - this.attachedCircle.x;
+        const dy = this.ball.position.y - this.attachedCircle.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < this.circleRadius + this.ballRadius) {
+            this.isSecondLineActive = true;
+            this.createLineCollisions(this.lineSegment.angle);
+        }
+    }
+
     update() {
         // Check if ball is in bottom 10% of screen
         if (this.ball && this.ball.position.y > window.innerHeight * 0.9) {
-            // Restart the scene
+            // Reset state variables and restart the scene
+            this.isSecondLineActive = false;  // Reset activation state
             this.scene.restart();
             return;
         }
+
+        // Check for ball-circle collision
+        this.checkBallCircleCollision();
 
         // Draw the lines
         this.graphics.clear();
@@ -307,6 +354,14 @@ class MyScene extends Phaser.Scene {
         const startY = this.lineCenter.y - Math.sin(angle) * halfLength;
         const endX = this.lineCenter.x + Math.cos(angle) * halfLength;
         const endY = this.lineCenter.y + Math.sin(angle) * halfLength;
+        
+        // Calculate position above the line using perpendicular vector
+        const perpX = Math.sin(angle) * this.circleOffset;
+        const perpY = -Math.cos(angle) * this.circleOffset;
+        // Adjust for circle radius to align left edge with line end
+        const radiusOffsetX = Math.cos(angle) * this.circleRadius;
+        const radiusOffsetY = Math.sin(angle) * this.circleRadius;
+        this.attachedCircle.setPosition(startX + perpX + radiusOffsetX, startY + perpY + radiusOffsetY);
         
         this.graphics.lineStyle(this.lineThickness, 0x00ff00);
         this.graphics.beginPath();
@@ -324,6 +379,8 @@ class MyScene extends Phaser.Scene {
         const secondEndX = intersectX + Math.cos(secondAngle) * secondHalfLength;
         const secondEndY = intersectY + Math.sin(secondAngle) * secondHalfLength;
         
+        // Set opacity based on activation state
+        this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isSecondLineActive ? 1 : 0.5);
         this.graphics.beginPath();
         this.graphics.moveTo(intersectX, intersectY);
         this.graphics.lineTo(secondEndX, secondEndY);

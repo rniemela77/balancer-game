@@ -55,12 +55,19 @@ class MyScene extends Phaser.Scene {
         this.graphics = this.add.graphics({ lineStyle: { width: this.lineThickness, color: 0x00ff00 } });
         
         // Create the dark grey circles (non-physics)
-        this.circleRadius = this.lineThickness * 1.5;  // 50% larger than line thickness
-        this.circleOffset = this.lineThickness * 2;  // Offset above the line
-        this.firstCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
-        this.secondCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
-        this.thirdCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
-        this.fourthCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
+        this.circleRadius = this.lineThickness * 0.8;  // Reduced from 1.5 to 0.8
+        this.circleOffset = this.lineThickness * 1.2;  // Reduced from 2 to 1.2 to be closer to line
+        this.firstCircle = this.add.circle(0, 0, this.circleRadius, 0xFFD700);  // Gold color
+        this.secondCircle = this.add.circle(0, 0, this.circleRadius, 0xFFD700);
+        this.thirdCircle = this.add.circle(0, 0, this.circleRadius, 0xFFD700);
+        this.fourthCircle = this.add.circle(0, 0, this.circleRadius, 0xFFD700);
+        
+        // Set initial opacity for all circles
+        this.firstCircle.setAlpha(0.5);
+        this.secondCircle.setAlpha(0.5);
+        this.thirdCircle.setAlpha(0.5);
+        this.fourthCircle.setAlpha(0.5);
+        
         this.secondCircle.visible = false;  // Hide initially until second line is active
         this.thirdCircle.visible = false;   // Hide initially until third line is active
         this.fourthCircle.visible = false;  // Hide initially until fourth line is active
@@ -520,9 +527,9 @@ class MyScene extends Phaser.Scene {
         // Calculate position above the line using perpendicular vector
         const perpX = Math.sin(angle) * this.circleOffset;
         const perpY = -Math.cos(angle) * this.circleOffset;
-        // Adjust for circle radius to align left edge with line end
-        const radiusOffsetX = Math.cos(angle) * this.circleRadius;
-        const radiusOffsetY = Math.sin(angle) * this.circleRadius;
+        // Position first circle closer to left end
+        const radiusOffsetX = Math.cos(angle) * this.circleRadius * 0.5;
+        const radiusOffsetY = Math.sin(angle) * this.circleRadius * 0.5;
         this.firstCircle.setPosition(startX + perpX + radiusOffsetX, startY + perpY + radiusOffsetY);
         
         this.graphics.lineStyle(this.lineThickness, 0x00ff00, 1.0);  // Main line always at 100%
@@ -540,13 +547,13 @@ class MyScene extends Phaser.Scene {
         const secondEndX = intersectX + Math.cos(secondAngle) * this.secondLineLength;
         const secondEndY = intersectY + Math.sin(secondAngle) * this.secondLineLength;
         
-        // Update second circle position
+        // Update second circle position - closer to right end
         if (this.isSecondLineActive) {
             const secondPerpX = Math.sin(secondAngle) * this.circleOffset;
             const secondPerpY = -Math.cos(secondAngle) * this.circleOffset;
             this.secondCircle.setPosition(
-                secondEndX + secondPerpX - Math.cos(secondAngle) * this.circleRadius,
-                secondEndY + secondPerpY - Math.sin(secondAngle) * this.circleRadius
+                secondEndX + secondPerpX - Math.cos(secondAngle) * this.circleRadius * 0.5,
+                secondEndY + secondPerpY - Math.sin(secondAngle) * this.circleRadius * 0.5
             );
         }
         
@@ -564,13 +571,13 @@ class MyScene extends Phaser.Scene {
         const thirdEndX = thirdIntersectX + Math.cos(thirdAngle) * this.thirdLineLength;
         const thirdEndY = thirdIntersectY + Math.sin(thirdAngle) * this.thirdLineLength;
 
-        // Update third circle position
+        // Update third circle position - closer to right end
         if (this.isThirdLineActive) {
-            const thirdPerpX = -Math.sin(thirdAngle) * this.circleOffset;  // Negative to match other circles
-            const thirdPerpY = Math.cos(thirdAngle) * this.circleOffset;   // Positive to match other circles
+            const thirdPerpX = -Math.sin(thirdAngle) * this.circleOffset;
+            const thirdPerpY = Math.cos(thirdAngle) * this.circleOffset;
             this.thirdCircle.setPosition(
-                thirdEndX + thirdPerpX - Math.cos(thirdAngle) * this.circleRadius,
-                thirdEndY + thirdPerpY - Math.sin(thirdAngle) * this.circleRadius
+                thirdEndX + thirdPerpX - Math.cos(thirdAngle) * this.circleRadius * 0.5,
+                thirdEndY + thirdPerpY - Math.sin(thirdAngle) * this.circleRadius * 0.5
             );
             this.thirdCircle.visible = true;
         }
@@ -589,13 +596,13 @@ class MyScene extends Phaser.Scene {
         const fourthEndX = fourthIntersectX + Math.cos(fourthAngle) * this.fourthLineLength;
         const fourthEndY = fourthIntersectY + Math.sin(fourthAngle) * this.fourthLineLength;
         
-        // Update fourth circle position
+        // Update fourth circle position - closer to right end
         if (this.isFourthLineActive) {
             const fourthPerpX = Math.sin(fourthAngle) * this.circleOffset;
             const fourthPerpY = -Math.cos(fourthAngle) * this.circleOffset;
             this.fourthCircle.setPosition(
-                fourthEndX + fourthPerpX - Math.cos(fourthAngle) * this.circleRadius,
-                fourthEndY + fourthPerpY - Math.sin(fourthAngle) * this.circleRadius
+                fourthEndX + fourthPerpX - Math.cos(fourthAngle) * this.circleRadius * 0.5,
+                fourthEndY + fourthPerpY - Math.sin(fourthAngle) * this.circleRadius * 0.5
             );
             this.fourthCircle.visible = true;
         }

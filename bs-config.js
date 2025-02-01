@@ -1,7 +1,11 @@
 module.exports = {
-    server: {
-        baseDir: './'
+    files: ['./**/*.{html,css,js}'],
+    server: true,
+    https: {
+        key: "./localhost-key.pem",
+        cert: "./localhost.pem"
     },
-    files: ['*.html', '*.js', 'path/to/your/assets/*'], // Adjust to include your asset paths
-    open: true
+    port: 3000,
+    watch: true,
+    notify: false
 };

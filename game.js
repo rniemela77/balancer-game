@@ -4,6 +4,7 @@ class MyScene extends Phaser.Scene {
         this.hasDeviceOrientation = false;
         this.isSecondLineActive = false;  // Track activation state
         this.isThirdLineActive = false;   // Track third line activation
+        this.isFourthLineActive = false;  // Track fourth line activation
     }
 
     preload() {
@@ -21,6 +22,9 @@ class MyScene extends Phaser.Scene {
         if (this.thirdLineSegment) {
             this.matter.world.remove(this.thirdLineSegment);
         }
+        if (this.fourthLineSegment) {
+            this.matter.world.remove(this.fourthLineSegment);
+        }
         if (this.ball) {
             this.matter.world.remove(this.ball);
         }
@@ -28,6 +32,7 @@ class MyScene extends Phaser.Scene {
         // Reset state variables
         this.isSecondLineActive = false;
         this.isThirdLineActive = false;
+        this.isFourthLineActive = false;
         this.currentAngle = 0;
         
         // Clear graphics
@@ -52,9 +57,13 @@ class MyScene extends Phaser.Scene {
         // Create the dark grey circles (non-physics)
         this.circleRadius = this.lineThickness * 1.5;  // 50% larger than line thickness
         this.circleOffset = this.lineThickness * 2;  // Offset above the line
-        this.firstCircle = this.add.circle(0, 0, this.circleRadius, 0x444444);
-        this.secondCircle = this.add.circle(0, 0, this.circleRadius, 0x444444);
+        this.firstCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
+        this.secondCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
+        this.thirdCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
+        this.fourthCircle = this.add.circle(0, 0, this.circleRadius, 0x222222);
         this.secondCircle.visible = false;  // Hide initially until second line is active
+        this.thirdCircle.visible = false;   // Hide initially until third line is active
+        this.fourthCircle.visible = false;  // Hide initially until fourth line is active
         
         // Add debug text
         this.debugText = this.add.text(10, 10, 'Debug Info', {
@@ -64,7 +73,7 @@ class MyScene extends Phaser.Scene {
         });
         
         // Calculate ball size and position
-        this.ballRadius = (window.innerWidth * 0.07) / 2;  // 15% of screen width (diameter)
+        this.ballRadius = (window.innerWidth * 0.07) / 2;
         this.ballStartX = window.innerWidth * 0.75;  // 85% across screen (15% from right)
         
         // Create ball using Matter.js
@@ -74,6 +83,7 @@ class MyScene extends Phaser.Scene {
         this.lineLength = window.innerWidth * 0.85;  // 85% of screen width
         this.secondLineLength = window.innerWidth * 0.55;  // 55% of screen width
         this.thirdLineLength = window.innerWidth * 0.45;   // 45% of screen width
+        this.fourthLineLength = window.innerWidth * 0.35;  // 35% of screen width
         this.lineCenter = {
             x: window.innerWidth / 2,
             y: window.innerHeight / 2
@@ -81,6 +91,7 @@ class MyScene extends Phaser.Scene {
         this.currentAngle = 0;
         this.secondLineAngle = -Math.PI / 20;
         this.thirdLineAngle = -Math.PI / 1.1;  // Opposite angle of second line
+        this.fourthLineAngle = Math.PI / 1.1;  // Opposite angle of third line
 
         // Create initial lines collision
         this.createLineCollisions(0);
@@ -298,6 +309,9 @@ class MyScene extends Phaser.Scene {
         if (this.thirdLineSegment) {
             this.matter.world.remove(this.thirdLineSegment);
         }
+        if (this.fourthLineSegment) {
+            this.matter.world.remove(this.fourthLineSegment);
+        }
 
         // Calculate first intersection point (25% from left of main line)
         const intersectionOffset = -this.lineLength * 0.25;
@@ -320,14 +334,13 @@ class MyScene extends Phaser.Scene {
             }
         );
 
+        // Calculate second line properties
+        const secondAngle = angle + this.secondLineAngle;
+        const secondEndX = intersectX + Math.cos(secondAngle) * this.secondLineLength;
+        const secondEndY = intersectY + Math.sin(secondAngle) * this.secondLineLength;
+
         // Create the second line segment - only add physics body if active
         if (this.isSecondLineActive) {
-            const secondAngle = angle + this.secondLineAngle;
-            
-            // Calculate second line's end point for third line attachment
-            const secondEndX = intersectX + Math.cos(secondAngle) * this.secondLineLength;
-            const secondEndY = intersectY + Math.sin(secondAngle) * this.secondLineLength;
-            
             // Position the second line to start at intersection point
             const secondLineHalfLength = this.secondLineLength / 2;
             const secondLineCenterX = intersectX + Math.cos(secondAngle) * secondLineHalfLength;
@@ -347,33 +360,62 @@ class MyScene extends Phaser.Scene {
                     render: { fillStyle: '#00ff00' }
                 }
             );
+        }
 
-            // Create third line if active
-            if (this.isThirdLineActive) {
-                // Calculate third line intersection point (25% from right of second line)
-                const thirdIntersectX = secondEndX - Math.cos(secondAngle) * (this.secondLineLength * 0.25);
-                const thirdIntersectY = secondEndY - Math.sin(secondAngle) * (this.secondLineLength * 0.25);
-                
-                const thirdAngle = secondAngle + this.thirdLineAngle;
-                const thirdLineHalfLength = this.thirdLineLength / 2;
-                const thirdLineCenterX = thirdIntersectX + Math.cos(thirdAngle) * thirdLineHalfLength;
-                const thirdLineCenterY = thirdIntersectY + Math.sin(thirdAngle) * thirdLineHalfLength;
+        // Calculate third line properties
+        const thirdIntersectX = secondEndX - Math.cos(secondAngle) * (this.secondLineLength * 0.25);
+        const thirdIntersectY = secondEndY - Math.sin(secondAngle) * (this.secondLineLength * 0.25);
+        const thirdAngle = secondAngle + this.thirdLineAngle;
+        const thirdEndX = thirdIntersectX + Math.cos(thirdAngle) * this.thirdLineLength;
+        const thirdEndY = thirdIntersectY + Math.sin(thirdAngle) * this.thirdLineLength;
 
-                this.thirdLineSegment = this.matter.add.rectangle(
-                    thirdLineCenterX,
-                    thirdLineCenterY,
-                    this.thirdLineLength,
-                    this.lineThickness,
-                    {
-                        isStatic: true,
-                        angle: thirdAngle,
-                        friction: 0,
-                        frictionStatic: 0,
-                        restitution: 0,
-                        render: { fillStyle: '#00ff00' }
-                    }
-                );
-            }
+        // Create third line if active
+        if (this.isThirdLineActive) {
+            const thirdLineHalfLength = this.thirdLineLength / 2;
+            const thirdLineCenterX = thirdIntersectX + Math.cos(thirdAngle) * thirdLineHalfLength;
+            const thirdLineCenterY = thirdIntersectY + Math.sin(thirdAngle) * thirdLineHalfLength;
+
+            this.thirdLineSegment = this.matter.add.rectangle(
+                thirdLineCenterX,
+                thirdLineCenterY,
+                this.thirdLineLength,
+                this.lineThickness,
+                {
+                    isStatic: true,
+                    angle: thirdAngle,
+                    friction: 0,
+                    frictionStatic: 0,
+                    restitution: 0,
+                    render: { fillStyle: '#00ff00' }
+                }
+            );
+        }
+
+        // Calculate fourth line properties
+        const fourthIntersectX = thirdEndX - Math.cos(thirdAngle) * (this.thirdLineLength * 0.25);
+        const fourthIntersectY = thirdEndY - Math.sin(thirdAngle) * (this.thirdLineLength * 0.25);
+        const fourthAngle = thirdAngle + this.fourthLineAngle;
+
+        // Create fourth line if active
+        if (this.isFourthLineActive) {
+            const fourthLineHalfLength = this.fourthLineLength / 2;
+            const fourthLineCenterX = fourthIntersectX + Math.cos(fourthAngle) * fourthLineHalfLength;
+            const fourthLineCenterY = fourthIntersectY + Math.sin(fourthAngle) * fourthLineHalfLength;
+
+            this.fourthLineSegment = this.matter.add.rectangle(
+                fourthLineCenterX,
+                fourthLineCenterY,
+                this.fourthLineLength,
+                this.lineThickness,
+                {
+                    isStatic: true,
+                    angle: fourthAngle,
+                    friction: 0,
+                    frictionStatic: 0,
+                    restitution: 0,
+                    render: { fillStyle: '#00ff00' }
+                }
+            );
         }
 
         // Set ball's collision filter
@@ -394,6 +436,7 @@ class MyScene extends Phaser.Scene {
         if (distance1 < this.circleRadius + this.ballRadius && !this.isSecondLineActive) {
             this.isSecondLineActive = true;
             this.secondCircle.visible = true;  // Show second circle when second line activates
+            this.firstCircle.setAlpha(0);     // Make first circle invisible after hit
             this.createLineCollisions(this.lineSegment.angle);
             return;
         }
@@ -406,7 +449,34 @@ class MyScene extends Phaser.Scene {
 
             if (distance2 < this.circleRadius + this.ballRadius) {
                 this.isThirdLineActive = true;
+                this.thirdCircle.visible = true;  // Show third circle
+                this.secondCircle.setAlpha(0);   // Make second circle invisible after hit
                 this.createLineCollisions(this.lineSegment.angle);
+            }
+        }
+
+        // Check collision with third circle if third line is active
+        if (this.isThirdLineActive && !this.isFourthLineActive) {
+            const dx3 = this.ball.position.x - this.thirdCircle.x;
+            const dy3 = this.ball.position.y - this.thirdCircle.y;
+            const distance3 = Math.sqrt(dx3 * dx3 + dy3 * dy3);
+
+            if (distance3 < this.circleRadius + this.ballRadius) {
+                this.isFourthLineActive = true;
+                this.fourthCircle.visible = true;  // Show fourth circle
+                this.thirdCircle.setAlpha(0);     // Make third circle invisible after hit
+                this.createLineCollisions(this.lineSegment.angle);
+            }
+        }
+
+        // Check collision with fourth circle
+        if (this.isFourthLineActive) {
+            const dx4 = this.ball.position.x - this.fourthCircle.x;
+            const dy4 = this.ball.position.y - this.fourthCircle.y;
+            const distance4 = Math.sqrt(dx4 * dx4 + dy4 * dy4);
+
+            if (distance4 < this.circleRadius + this.ballRadius) {
+                this.fourthCircle.setAlpha(0);  // Make fourth circle invisible after hit
             }
         }
     }
@@ -417,6 +487,12 @@ class MyScene extends Phaser.Scene {
             // Reset state variables and restart the scene
             this.isSecondLineActive = false;
             this.isThirdLineActive = false;
+            this.isFourthLineActive = false;
+            // Reset circle alphas
+            this.firstCircle.setAlpha(1);
+            this.secondCircle.setAlpha(1);
+            this.thirdCircle.setAlpha(1);
+            this.fourthCircle.setAlpha(1);
             this.scene.restart();
             return;
         }
@@ -434,7 +510,7 @@ class MyScene extends Phaser.Scene {
         // Draw the lines
         this.graphics.clear();
         
-        // Draw main line
+        // Draw main line (always active, full opacity)
         const angle = this.lineSegment.angle;
         const halfLength = this.lineLength / 2;
         const startX = this.lineCenter.x - Math.cos(angle) * halfLength;
@@ -450,13 +526,13 @@ class MyScene extends Phaser.Scene {
         const radiusOffsetY = Math.sin(angle) * this.circleRadius;
         this.firstCircle.setPosition(startX + perpX + radiusOffsetX, startY + perpY + radiusOffsetY);
         
-        this.graphics.lineStyle(this.lineThickness, 0x00ff00);
+        this.graphics.lineStyle(this.lineThickness, 0x00ff00, 1.0);  // Main line always at 100%
         this.graphics.beginPath();
         this.graphics.moveTo(startX, startY);
         this.graphics.lineTo(endX, endY);
         this.graphics.strokePath();
 
-        // Draw second line
+        // Draw second line (only if active)
         const intersectionOffset = -this.lineLength * 0.25;
         const intersectX = this.lineCenter.x + Math.cos(angle) * intersectionOffset;
         const intersectY = this.lineCenter.y + Math.sin(angle) * intersectionOffset;
@@ -465,7 +541,7 @@ class MyScene extends Phaser.Scene {
         const secondEndX = intersectX + Math.cos(secondAngle) * this.secondLineLength;
         const secondEndY = intersectY + Math.sin(secondAngle) * this.secondLineLength;
         
-        // Update second circle position at the right end of second line
+        // Update second circle position
         if (this.isSecondLineActive) {
             const secondPerpX = Math.sin(secondAngle) * this.circleOffset;
             const secondPerpY = -Math.cos(secondAngle) * this.circleOffset;
@@ -475,27 +551,60 @@ class MyScene extends Phaser.Scene {
             );
         }
         
-        // Set opacity based on activation state
-        this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isSecondLineActive ? 1 : 0.5);
+        this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isSecondLineActive ? 1.0 : 0);
         this.graphics.beginPath();
         this.graphics.moveTo(intersectX, intersectY);
         this.graphics.lineTo(secondEndX, secondEndY);
         this.graphics.strokePath();
 
-        // Draw third line (always visible)
-        // Calculate third line intersection point
+        // Draw third line (only if active)
         const thirdIntersectX = secondEndX - Math.cos(secondAngle) * (this.secondLineLength * 0.25);
         const thirdIntersectY = secondEndY - Math.sin(secondAngle) * (this.secondLineLength * 0.25);
         
         const thirdAngle = secondAngle + this.thirdLineAngle;
         const thirdEndX = thirdIntersectX + Math.cos(thirdAngle) * this.thirdLineLength;
         const thirdEndY = thirdIntersectY + Math.sin(thirdAngle) * this.thirdLineLength;
+
+        // Update third circle position
+        if (this.isThirdLineActive) {
+            const thirdPerpX = -Math.sin(thirdAngle) * this.circleOffset;  // Negative to match other circles
+            const thirdPerpY = Math.cos(thirdAngle) * this.circleOffset;   // Positive to match other circles
+            this.thirdCircle.setPosition(
+                thirdEndX + thirdPerpX - Math.cos(thirdAngle) * this.circleRadius,
+                thirdEndY + thirdPerpY - Math.sin(thirdAngle) * this.circleRadius
+            );
+            this.thirdCircle.visible = true;
+        }
         
-        // Set opacity based on activation state - 0.25 when inactive, 1 when active
-        this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isThirdLineActive ? 1 : 0.25);
+        this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isThirdLineActive ? 1.0 : 0);
         this.graphics.beginPath();
         this.graphics.moveTo(thirdIntersectX, thirdIntersectY);
         this.graphics.lineTo(thirdEndX, thirdEndY);
+        this.graphics.strokePath();
+
+        // Draw fourth line (only if active)
+        const fourthIntersectX = thirdEndX - Math.cos(thirdAngle) * (this.thirdLineLength * 0.25);
+        const fourthIntersectY = thirdEndY - Math.sin(thirdAngle) * (this.thirdLineLength * 0.25);
+        
+        const fourthAngle = thirdAngle + this.fourthLineAngle;
+        const fourthEndX = fourthIntersectX + Math.cos(fourthAngle) * this.fourthLineLength;
+        const fourthEndY = fourthIntersectY + Math.sin(fourthAngle) * this.fourthLineLength;
+        
+        // Update fourth circle position
+        if (this.isFourthLineActive) {
+            const fourthPerpX = Math.sin(fourthAngle) * this.circleOffset;
+            const fourthPerpY = -Math.cos(fourthAngle) * this.circleOffset;
+            this.fourthCircle.setPosition(
+                fourthEndX + fourthPerpX - Math.cos(fourthAngle) * this.circleRadius,
+                fourthEndY + fourthPerpY - Math.sin(fourthAngle) * this.circleRadius
+            );
+            this.fourthCircle.visible = true;
+        }
+        
+        this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isFourthLineActive ? 1.0 : 0);
+        this.graphics.beginPath();
+        this.graphics.moveTo(fourthIntersectX, fourthIntersectY);
+        this.graphics.lineTo(fourthEndX, fourthEndY);
         this.graphics.strokePath();
 
         // Update ball graphics position to match physics body

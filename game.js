@@ -65,13 +65,13 @@ class MyScene extends Phaser.Scene {
 
         // Line properties
         this.lineLength = window.innerWidth * 0.85;  // 85% of screen width
-        this.secondLineLength = window.innerWidth * 0.75;  // 75% of screen width
+        this.secondLineLength = window.innerWidth * 0.55;  // 75% of screen width
         this.lineCenter = {
             x: window.innerWidth / 2,
             y: window.innerHeight / 2
         };
         this.currentAngle = 0;
-        this.secondLineAngle = -Math.PI / 4;
+        this.secondLineAngle = -Math.PI / 20;
 
         // Create initial lines collision
         this.createLineCollisions(0);
@@ -292,9 +292,14 @@ class MyScene extends Phaser.Scene {
 
         // Create the second line segment - only add physics body if active
         if (this.isSecondLineActive) {
+            // Position the second line to start at intersection point
+            const secondLineHalfLength = this.secondLineLength / 2;
+            const secondLineCenterX = intersectX + Math.cos(angle + this.secondLineAngle) * secondLineHalfLength;
+            const secondLineCenterY = intersectY + Math.sin(angle + this.secondLineAngle) * secondLineHalfLength;
+            
             this.secondLineSegment = this.matter.add.rectangle(
-                intersectX,
-                intersectY,
+                secondLineCenterX,
+                secondLineCenterY,
                 this.secondLineLength,
                 this.lineThickness,
                 {
@@ -375,9 +380,9 @@ class MyScene extends Phaser.Scene {
         const intersectY = this.lineCenter.y + Math.sin(angle) * intersectionOffset;
         
         const secondAngle = angle + this.secondLineAngle;
-        const secondHalfLength = this.secondLineLength / 2;
-        const secondEndX = intersectX + Math.cos(secondAngle) * secondHalfLength;
-        const secondEndY = intersectY + Math.sin(secondAngle) * secondHalfLength;
+        // Draw the second line starting from intersection point
+        const secondEndX = intersectX + Math.cos(secondAngle) * this.secondLineLength;
+        const secondEndY = intersectY + Math.sin(secondAngle) * this.secondLineLength;
         
         // Set opacity based on activation state
         this.graphics.lineStyle(this.lineThickness, 0x00ff00, this.isSecondLineActive ? 1 : 0.5);

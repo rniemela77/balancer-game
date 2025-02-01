@@ -1,9 +1,9 @@
 {
   "scripts": {
-    "start": "browser-sync start --server --files 'src/*.js, index.html'"
-  },
-  "dependencies": {
+    "start": "browser-sync start --config bs-config.js"
+},
+  "devDependencies": {
     "browser-sync": "^3.0.3",
-    "phaser": "^3.87.0"
+    "phaser": "^3.86.0"
   }
 }
